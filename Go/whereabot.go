@@ -35,7 +35,6 @@ func main() {
 	slackClient  = slack.New(slack_token)
 	witai_token := "APUKCLVTHDDGKMPT6LCS73FNDUBDIVRE"
 	witClient = wit.NewClient(witai_token)
-	//wolfram_token := "XQ5AUJ-53AET27QQ5"
 	wolframClient = &wolfram.Client{"XQ5AUJ-53AET27QQ5"}
 
 	rtm := slackClient.NewRTM()
@@ -49,7 +48,6 @@ func main() {
 			}
 		}
 	}
-
 }
 
 func handleMessage(ev *slack.MessageEvent, db *sql.DB) {
@@ -104,9 +102,6 @@ func replyToUser(ev *slack.MessageEvent, topEntity wit.MessageEntity, topEntityK
 			}
 		}
 		return
-	case "contact":
-		slackClient.PostMessage(ev.User, slack.MsgOptionText("Contact", false), slack.MsgOptionPostMessageParameters(slack.PostMessageParameters{AsUser: true,}))
-		return
 	}
-	slackClient.PostMessage(ev.User, slack.MsgOptionText("¯\\_(o_o)_/¯", false), slack.MsgOptionPostMessageParameters(slack.PostMessageParameters{AsUser: true,}))
+	slackClient.PostMessage(ev.User, slack.MsgOptionText("i dunno! sorry!", false), slack.MsgOptionPostMessageParameters(slack.PostMessageParameters{AsUser: true,}))
 }
