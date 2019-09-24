@@ -4,11 +4,16 @@ import (
 	"log"
 	"os"
 	"fmt"
+	"path"
+	"path/filepath"
+	"runtime"
+	"strings"
 	"github.com/Krognol/go-wolfram"
 	"github.com/christianrondeau/go-wit"
 	"github.com/nlopes/slack"
 	"database/sql"
 	_ "github.com/go-sql-driver/mysql"
+	"github.com/tkanos/gonfig"
 )
 
 const confidenceThreshold = 0.5
@@ -17,13 +22,21 @@ var (
 	witClient     *wit.Client
 	wolframClient *wolfram.Client	
 	err			  error
+	
 )
+
+type Configuration struct {
+    SlackToken       string `json:"SlackToken"`
+    WitaiToken       string `json:"WitaiToken"`
+    WolframToken     string `json:"WolframToken"`
+}
 
 type DB struct {
     *sql.DB
 }
 
 func main() {
+
 	db, err := sql.Open("mysql", "root:root@tcp(localhost)/test_db")
 	if err != nil {
 		fmt.Println(err)
@@ -31,12 +44,17 @@ func main() {
 	}
 	defer db.Close()
 	
-	slack_token := "xoxb-765689382215-751070033618-zsg196Mr0o3cZX2hUcb4OwTU"
-	slackClient  = slack.New(slack_token)
-	witai_token := "APUKCLVTHDDGKMPT6LCS73FNDUBDIVRE"
-	witClient = wit.NewClient(witai_token)
-	wolframClient = &wolfram.Client{"XQ5AUJ-53AET27QQ5"}
+	configuration := Configuration{}
+	err2 := gonfig.GetConf(getFileName(), &configuration)
+	fmt.Println(err2)
+	if err2 != nil {
+		fmt.Println(err2)
+		os.Exit(500)
+	}
 
+	slackClient  = slack.New(configuration.SlackToken)
+	witClient = wit.NewClient(configuration.WitaiToken)
+	wolframClient = &wolfram.Client{configuration.WolframToken}
 	rtm := slackClient.NewRTM()
 	go rtm.ManageConnection()
 
@@ -48,6 +66,17 @@ func main() {
 			}
 		}
 	}
+}
+
+func getFileName() string {
+	env := os.Getenv("ENV")
+	if len(env) == 0 {
+		env = "development"
+	}
+	filename := []string{"config/", "token.", env, ".json"}
+	_, dirname, _, _ := runtime.Caller(0)
+	filePath := path.Join(filepath.Dir(dirname), strings.Join(filename, ""))
+	return filePath
 }
 
 func handleMessage(ev *slack.MessageEvent, db *sql.DB) {
